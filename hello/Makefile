@@ -16,4 +16,4 @@ clean:
 	rm -f *.o
 	rm -f *.mod.*
 	rm -f .*.cmd
-	rm -f moudles.order Module.symvers
+	rm -f modules.order Module.symvers
