@@ -4,7 +4,7 @@ LD = $(CROSS_COMPILE)ld
 
 obj-m := led.o
 
-KDIR := /home/image/workspace/android_imx8mq/android_build/out/target/product/evk_8mq/obj/KERNEL_OBJ/
+KDIR := $(ANDROID_BUILD_HOME)/out/target/product/evk_8mq/obj/KERNEL_OBJ/
 
 PWD := $(shell pwd)
 
