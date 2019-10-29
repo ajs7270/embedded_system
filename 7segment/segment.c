@@ -51,7 +51,7 @@ ssize_t sseg_write(struct file *pinode, const char *gdata, size_t len, loff_t *o
 	}
 
 	// type cast for 1byte to 2byte 
-	wordvalue = (bytevalue[0] << 12) | (bytevalue[2] << 8) | 
+	wordvalue = (bytevalue[0] << 12) | (bytevalue[1] << 8) | 
 			(bytevalue[2] << 4) | (bytevalue[3] << 0);
 	
 	//register write
