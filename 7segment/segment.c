@@ -40,12 +40,12 @@ int sseg_release(struct inode *pinode, struct file *pfile)
 ssize_t sseg_write(struct file *pinode, const char *gdata, size_t len, loff_t *off_what)
 {
 	unsigned char bytevalue[4]; // for user space data (1byte)
-	unsigned short wordvalue; // for register data (2byte)
+	unsigned short wordvalue; // for register data (2byte = 16bit)
 	const char *tmp = NULL;
 
 	tmp = gdata; // gdata is userspace data
 
-	if (copy_from_user(&bytevalue, tmp, 4))
+	if (copy_from_user(&bytevalue, tmp, 4)) // userspace data to kernel space
 	{
 		return -EFAULT;
 	}
