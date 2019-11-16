@@ -103,7 +103,7 @@ static long lcd_ioctl(struct file *pinode, unsigned int cmd, unsigned long data)
 			return -EFAULT;
 		}
 
-		lcd_cursor_pos = (param >> 1) << 1;
+		lcd_cursor_pos = (param >> 1) << 1; // odd to even
 		printk(KERN_DEBUG "param: %d, pos: %d\n",param, lcd_cursor_pos);
 		break;
 	}
