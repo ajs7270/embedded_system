@@ -19,6 +19,11 @@
 #define DOTM_RIGHT_SHIFT	_IOW(DOTM_MAGIC, 2, int)
 #define DOTM_LEFT_SHIFT		_IOW(DOTM_MAGIC, 3, int)
 
+#define DOT_WIDTH		8
+unsigned char buffer[100] = {0, };
+unsigned char current_word[10] = {0, };
+int current_state = 0; // 8 => 1 word
+int word_len = 0;
 
 
 //gpio fpga interface provided
@@ -50,7 +55,6 @@ unsigned char dotm_fontmap_empty[10] = {
         0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
 
-
 int dotm_open(struct inode *pinode, struct file *pfile)
 {
 	if (dotm_in_use != 0){
@@ -72,24 +76,30 @@ int dotm_release(struct inode *pinode, struct file *pfile)
 ssize_t dotm_write(struct file *pinode, const char *gdata, size_t len, loff_t *off_what)
 {
 	int ret, i;
-	unsigned char num; // for user space data (1byte)
+	//unsigned char num; // for user space data (1byte)
 	unsigned short wordvalue; // for register data (2byte = 16bit)
 	const char *tmp = NULL;
 
 	tmp = gdata; // gdata is userspace data
 
+	/*
 	if(len > 1) {
 		printk(KERN_WARNING "only 1 byte data will be processed\n");
 		len = 1;
 	}
+	*/
 
-	ret = copy_from_user(&num, tmp, 1);// userspace data to kernel space
+	ret = copy_from_user(buffer, tmp, len);// userspace data to kernel space
+
+	word_len = len;
+
 	if (ret) {
 		return -EFAULT;
 	}
 
 	for (i=0; i< 10; i++){
-		wordvalue = dotm_fontmap_decimal[num][i] & 0x7F;
+		wordvalue = dotm_fontmap_decimal[buffer[0]][i] & 0x7F;
+		current_word[i] = dotm_fontmap_decimal[buffer[0]][i] & 0x7F;
 		iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
 	}
 
@@ -108,26 +118,46 @@ static long dotm_ioctl(struct file *pinode, unsigned int cmd, unsigned long data
 			iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
 		}
 		break;
+
 	case DOTM_SET_CLEAR:
 		for (i=0; i<10;i++){
 			wordvalue = dotm_fontmap_empty[i] & 0x7F;
 			iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
 		}
 		break;
-	/*
+	
 	case DOTM_RIGHT_SHIFT:
+		current_state--;
+		unsigned char adj_word_buffer[10];
+		int adj_index = ((current_state/DOT_WIDTH)-1) % word_len;
+		for(i=0; i< 10; i++){
+			adj_word_buffer[i] = (dotm_fontmap_decimal[buffer[adj_index][i]]
+					<< (current_state % DOT_WIDTH)) & 0x7F;
+		}
+
 		for (i=0; i<10;i++){
-			wordvalue =  & 0x7F;
+			wordvalue = (current_word[i] >> 1) & 0x7F;
+			wordvalue = (current_word[i] | adj_word_buffer[i]) & 0x7F;
+			current_word[i] = wordvalue;
 			iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
 		}
 		break;
+
 	case DOTM_LEFT_SHIFT:
+		unsigned char adj_word_buffer[10];
+		int adj_index = ((current_state/DOT_WIDTH)) % word_len;
+		for(i=0; i< 10; i++){
+			adj_word_buffer[i] = (dotm_fontmap_decimal[buffer[adj_index][i]]
+					<< (current_state % DOT_WIDTH)) & 0x7F;
+		}
+
 		for (i=0; i<10;i++){
-			wordvalue = dotm_fontmap_empty[i] & 0x7F;
+			wordvalue = (current_word[i] << 1) & 0x7F;
+			wordvalue = (current_word[i] | adj_word_buffer[i]) & 0x7F;
+			current_word[i] = wordvalue;
 			iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
 		}
 		break;
-	*/
 
 	}
 
