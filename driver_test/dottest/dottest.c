@@ -6,25 +6,32 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 
-#define PROGRAM_USAGE_STRING "usage: %s [0-9]\n"
+#define PROGRAM_USAGE_STRING "usage: %s [ex)20160237 ,MAXIMUM length 100]\n"
 
 #define DOTM_MAGIC		0xBC
 #define DOTM_SET_ALL		_IOW(DOTM_MAGIC, 0, int)
 #define DOTM_SET_CLEAR		_IOW(DOTM_MAGIC, 1, int)
+#define DOTM_RIGHT_SHIFT	_IOW(DOTM_MAGIC, 2, int)
+#define DOTM_LEFT_SHIFT		_IOW(DOTM_MAGIC, 3, int)
 
 int main(int argc, char **argv)
 {
-	int fd, num, i;
+	int fd, i;
+	unsigned char buffer[100] ={0, };
 
 	if (argc <= 1) {
 		fprintf(stderr, PROGRAM_USAGE_STRING, argv[0]);
 		return -1;
 	}
-
-	num = (int) strtol(argv[1], NULL, 10);
-	if( num < 0 || num > 9){
+	
+	if(strlen(argv[1]) > 100){
 		fprintf(stderr, PROGRAM_USAGE_STRING, argv[0]);
 		return -1;
+	}
+
+	//insert buffer
+	for(i = 0; i< strlen(argv[1]);i++){
+		buffer[i] = (unsigned char) argv[1][i] - '0';
 	}
 
 	fd = open("/dev/dotmatrix", O_WRONLY);
@@ -34,10 +41,11 @@ int main(int argc, char **argv)
 		ioctl(fd, DOTM_SET_ALL, NULL, _IOC_SIZE(DOTM_SET_ALL));
 		usleep(500000);
 
-		for (i=num; i<10; i++){
-			write(fd, &i, sizeof(num));
-			usleep(500000);
-		}
+		write(fd, buffer, sizeof(unsigned char)*strlen(argv[1]));
+		usleep(500000);
+
+		ioctl(fd, DOTM_LEFT_SHIFT, NULL, _IOC_SIZE(DOTM_LEFT_SHIFT));
+		usleep(500000);
 
 		ioctl(fd, DOTM_SET_CLEAR, NULL, _IOC_SIZE(DOTM_SET_CLEAR));
 		usleep(500000);
