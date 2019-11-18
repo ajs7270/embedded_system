@@ -4,6 +4,7 @@
 #include <linux/uaccess.h>	// needed by user space copy functions
 #include <linux/fs.h>		// needed by file operations
 #include <linux/miscdevice.h>	// needed by misc device driver function
+#include <linux/delay.h>
 #include <asm/ioctl.h>	// needed by ioctl functions and macros
 
 #define DRIVER_AUTHOR	"jisuAn"
@@ -18,6 +19,8 @@
 #define DOTM_SET_CLEAR		_IOW(DOTM_MAGIC, 1, int)
 #define DOTM_RIGHT_SHIFT	_IOW(DOTM_MAGIC, 2, int)
 #define DOTM_LEFT_SHIFT		_IOW(DOTM_MAGIC, 3, int)
+#define DOTM_KOR_PRINT		_IOW(DOTM_MAGIC, 4, int)
+#define DOTM_ENG_PRINT		_IOW(DOTM_MAGIC, 5, int)
 
 #define DOT_WIDTH		8
 unsigned char buffer[100] = {0, };
@@ -123,7 +126,7 @@ ssize_t dotm_write(struct file *pinode, const char *gdata, size_t len, loff_t *o
 
 static long dotm_ioctl(struct file *pinode, unsigned int cmd, unsigned long data)
 {
-	int i;
+	int i,j;
 	unsigned short wordvalue;
 
 	switch (cmd){
@@ -218,6 +221,28 @@ static long dotm_ioctl(struct file *pinode, unsigned int cmd, unsigned long data
 			// 인접한 친구 합침
 			wordvalue = (current_word[i] | adj_word_buffer[i]) & 0x7F;
 			iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
+		}
+		break;
+
+	case DOTM_KOR_PRINT:
+		for(i=0;i<3;i++){
+			for (j=0; j<10;j++){
+				wordvalue = dotm_fontmap_name_kor[j][i] & 0x7F;
+				iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
+			}
+
+			msleep(200);
+		}
+		break;
+
+	case DOTM_ENG_PRINT:
+		for(i=0;i<6;i++){
+			for (j=0; j<10;j++){
+				wordvalue = dotm_fontmap_name_eng[j][i] & 0x7F;
+				iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
+			}
+
+			msleep(200);
 		}
 		break;
 	}
