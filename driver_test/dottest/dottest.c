@@ -13,6 +13,9 @@
 #define DOTM_SET_CLEAR		_IOW(DOTM_MAGIC, 1, int)
 #define DOTM_RIGHT_SHIFT	_IOW(DOTM_MAGIC, 2, int)
 #define DOTM_LEFT_SHIFT		_IOW(DOTM_MAGIC, 3, int)
+#define DOTM_KOR_PRINT		_IOW(DOTM_MAGIC, 4, int)
+#define DOTM_ENG_PRINT		_IOW(DOTM_MAGIC, 5, int)
+
 
 int main(int argc, char **argv)
 {
@@ -39,16 +42,22 @@ int main(int argc, char **argv)
 	if (fd != -1){
 		//initalize
 		ioctl(fd, DOTM_SET_ALL, NULL, _IOC_SIZE(DOTM_SET_ALL));
-		usleep(500000);
+		usleep(200000);
 
 		write(fd, buffer, sizeof(unsigned char)*strlen(argv[1]));
-		usleep(500000);
+		usleep(200000);
 
-		ioctl(fd, DOTM_LEFT_SHIFT, NULL, _IOC_SIZE(DOTM_LEFT_SHIFT));
-		usleep(500000);
+		
+		for(i = 0; i< 56; i++){
+			ioctl(fd, DOTM_LEFT_SHIFT, NULL, _IOC_SIZE(DOTM_LEFT_SHIFT));
+		}
 
+		ioctl(fd, DOTM_KOR_PRINT, NULL, _IOC_SIZE(DOTM_KOR_PRINT));
+		usleep(200000);
+		ioctl(fd, DOTM_ENG_PRINT, NULL, _IOC_SIZE(DOTM_ENG_PRINT));
+		usleep(200000);
 		ioctl(fd, DOTM_SET_CLEAR, NULL, _IOC_SIZE(DOTM_SET_CLEAR));
-		usleep(500000);
+		usleep(200000);
 
 		close(fd);
 	} else {
