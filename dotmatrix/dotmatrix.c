@@ -128,6 +128,8 @@ static long dotm_ioctl(struct file *pinode, unsigned int cmd, unsigned long data
 {
 	int i,j;
 	unsigned short wordvalue;
+	unsigned char adj_word_buffer[10];
+	int adj_index; 
 
 	switch (cmd){
 	case DOTM_SET_ALL:
@@ -145,8 +147,10 @@ static long dotm_ioctl(struct file *pinode, unsigned int cmd, unsigned long data
 		break;
 	
 	case DOTM_RIGHT_SHIFT:
-		unsigned char adj_word_buffer[10];
-		int adj_index; 
+		// clearing
+		for(i=0;i<10;i++){
+			adj_word_buffer[i] = 0;
+		}
 
 		//update current_state
 		current_state--;
@@ -179,14 +183,16 @@ static long dotm_ioctl(struct file *pinode, unsigned int cmd, unsigned long data
 		//레지스터에 쓰기
 		for(i=0;i<10;i++){
 			// 인접한 친구 합침
-			wordvalue = (current_word[i] | adj_word_buffer[i]) & 0x7F;
+			wordvalue = current_word[i] = (current_word[i] | adj_word_buffer[i]) & 0x7F;
 			iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
 		}
 		break;
 
 	case DOTM_LEFT_SHIFT:
-		unsigned char adj_word_buffer[10];
-		int adj_index; 
+		// clearing
+		for(i=0;i<10;i++){
+			adj_word_buffer[i] = 0;
+		}
 
 		//update current_state
 		current_state++;
@@ -219,7 +225,7 @@ static long dotm_ioctl(struct file *pinode, unsigned int cmd, unsigned long data
 		//레지스터에 쓰기
 		for(i=0;i<10;i++){
 			// 인접한 친구 합침
-			wordvalue = (current_word[i] | adj_word_buffer[i]) & 0x7F;
+			wordvalue = current_word[i] = (current_word[i] | adj_word_buffer[i]) & 0x7F;
 			iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
 		}
 		break;
@@ -227,8 +233,8 @@ static long dotm_ioctl(struct file *pinode, unsigned int cmd, unsigned long data
 	case DOTM_KOR_PRINT:
 		for(i=0;i<3;i++){
 			for (j=0; j<10;j++){
-				wordvalue = dotm_fontmap_name_kor[j][i] & 0x7F;
-				iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
+				wordvalue = dotm_fontmap_name_kor[i][j] & 0x7F;
+				iom_fpga_itf_write((unsigned int) DOTM_ADDR+(j*2), wordvalue);
 			}
 
 			msleep(200);
@@ -238,8 +244,8 @@ static long dotm_ioctl(struct file *pinode, unsigned int cmd, unsigned long data
 	case DOTM_ENG_PRINT:
 		for(i=0;i<6;i++){
 			for (j=0; j<10;j++){
-				wordvalue = dotm_fontmap_name_eng[j][i] & 0x7F;
-				iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
+				wordvalue = dotm_fontmap_name_eng[i][j] & 0x7F;
+				iom_fpga_itf_write((unsigned int) DOTM_ADDR+(j*2), wordvalue);
 			}
 
 			msleep(200);
