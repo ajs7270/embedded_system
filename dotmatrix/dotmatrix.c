@@ -127,38 +127,84 @@ static long dotm_ioctl(struct file *pinode, unsigned int cmd, unsigned long data
 		break;
 	
 	case DOTM_RIGHT_SHIFT:
-		current_state--;
 		unsigned char adj_word_buffer[10];
-		int adj_index = ((current_state/DOT_WIDTH)-1) % word_len;
-		for(i=0; i< 10; i++){
-			adj_word_buffer[i] = (dotm_fontmap_decimal[buffer[adj_index][i]]
-					<< (current_state % DOT_WIDTH)) & 0x7F;
+		int adj_index; 
+
+		//update current_state
+		current_state--;
+
+		for(i=0;i<10; i++){
+			current_word[i] >>= 1;
+			current_word[i] &= 0x7F;
 		}
 
-		for (i=0; i<10;i++){
-			wordvalue = (current_word[i] >> 1) & 0x7F;
+		//만약 인접한 친구가 있다면 가져온다.
+		if(current_state > 0 ||
+			(current_state / DOT_WIDTH) < word_len){
+			//index 가져옴
+			adj_index = current_state / DOT_WIDTH;
+			if(current_state % DOT_WIDTH == 0){
+				adj_index--;
+			}
+			
+			//1st column 가져옴.
+			if(current_state % DOT_WIDTH != 1){ // 1이 나오면 빈칸출력이기 때문에 아무것도 안함
+				for(i=0;i<10;i++){
+					adj_word_buffer[i] = dotm_fontmap_decimal[buffer[adj_index]][i];
+					adj_word_buffer[i] <<= DOT_WIDTH - (current_state % DOT_WIDTH);
+					adj_word_buffer[i] &= 0x40;
+				}
+			}
+		}
+
+
+		//레지스터에 쓰기
+		for(i=0;i<10;i++){
+			// 인접한 친구 합침
 			wordvalue = (current_word[i] | adj_word_buffer[i]) & 0x7F;
-			current_word[i] = wordvalue;
 			iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
 		}
 		break;
 
 	case DOTM_LEFT_SHIFT:
 		unsigned char adj_word_buffer[10];
-		int adj_index = ((current_state/DOT_WIDTH)) % word_len;
-		for(i=0; i< 10; i++){
-			adj_word_buffer[i] = (dotm_fontmap_decimal[buffer[adj_index][i]]
-					<< (current_state % DOT_WIDTH)) & 0x7F;
+		int adj_index; 
+
+		//update current_state
+		current_state++;
+
+		for(i=0;i<10; i++){
+			current_word[i] <<= 1;
+			current_word[i] &= 0x7F;
 		}
 
-		for (i=0; i<10;i++){
-			wordvalue = (current_word[i] << 1) & 0x7F;
+		//만약 인접한 친구가 있다면 가져온다.
+		if(current_state > 0 ||
+			(current_state / DOT_WIDTH) < word_len){
+			//index 가져옴
+			adj_index = (current_state / DOT_WIDTH) + 1;
+			if(current_state % DOT_WIDTH == 0){
+				adj_index--;
+			}
+			
+			//1st column 가져옴.
+			if(current_state % DOT_WIDTH != 1){ // 1이 나오면 빈칸출력이기 때문에 아무것도 안함
+				for(i=0;i<10;i++){
+					adj_word_buffer[i] = dotm_fontmap_decimal[buffer[adj_index]][i];
+					adj_word_buffer[i] >>= DOT_WIDTH - (current_state % DOT_WIDTH);
+					adj_word_buffer[i] &= 0x01;
+				}
+			}
+		}
+
+
+		//레지스터에 쓰기
+		for(i=0;i<10;i++){
+			// 인접한 친구 합침
 			wordvalue = (current_word[i] | adj_word_buffer[i]) & 0x7F;
-			current_word[i] = wordvalue;
 			iom_fpga_itf_write((unsigned int) DOTM_ADDR+(i*2), wordvalue);
 		}
 		break;
-
 	}
 
 	return 0;
